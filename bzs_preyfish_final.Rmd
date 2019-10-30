@@ -1,0 +1,286 @@
+---
+title: "bzs surveys 2019"
+author: "GG"
+date: "October 30, 2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(dbplyr)
+```
+```{r}
+bzs_preyfish <- read_csv("~/github/bzs_lionfish/preyfish_2019_raw.csv")
+head(bzs_preyfish)
+bzs_preyfish_clean <- filter(bzs_preyfish, size<20, density>0, depth!=45)
+head(bzs_preyfish_clean)
+```
+```{r}
+library(dplyr)
+bzs_preyfish_final <- bzs_preyfish_clean %>%
+  mutate(year=as.factor(year)) %>% mutate(depth=as.factor(depth))
+head(bzs_preyfish_final)
+```
+```{r}
+library(dbplyr)
+mean_preyfish <- bzs_preyfish_final %>% group_by(year, site, depth, transect) %>% summarise(total_den = sum(density), total_bio = sum(biomass))
+head(mean_preyfish)
+```
+
+```{r}
+library(dbplyr)
+mean_trophic <- bzs_preyfish_final %>% group_by(year, site, depth, transect, trophic_guild) %>% summarise(total_den = mean(density), total_bio = mean(biomass))
+head(mean_trophic)
+``` 
+```{r}
+biomass_trophicguild <- ggplot (data = mean_trophic, aes(x = year, y=total_bio, fill = trophic_guild)) + geom_bar(stat = "summary", fun.y = "mean", position = "fill", color = "black") + scale_fill_brewer(palette = "YlGnBu", labels = c("Herbivore", "Invertivore", "Macrocarnivore", "Omnivore", "Planktivore"), name = ("Trophic Guild")) + theme_classic() + labs(y="Percent Contribution to Biomass", x = "Survey Year") + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+biomass_trophicguild
+ggsave(filename = "biomass_trophicguild.eps", plot = biomass_trophicguild, path = "~/github/bzs_lionfish", device = "eps", width = 6,height = 4,dpi = 600)
+```
+
+
+
+```{r}
+
+density_trophicguild <-ggplot(data = mean_trophic, aes(x = year, y=total_den, fill = trophic_guild)) + geom_bar(stat = "summary", fun.y = "mean", position = "fill", color = "black") + scale_fill_brewer(palette = "YlGnBu", labels = c("Herbivore", "Invertivore", "Macrocarnivore", "Omnivore", "Planktivore"), name = ("Trophic guild")) + theme_classic() + labs(y="Percent Contribution to Mean Density", x = "Survey Year") + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+density_trophicguild
+ggsave(filename = "density_trophicguild.eps",plot = density_trophicguild, path = "~/github/bzs_lionfish", device = "eps",width = 6,height = 4,dpi = 600)
+```
+
+```{r}
+mean_biomass_depth <-ggplot(data = mean_preyfish, aes(x = depth, y=total_bio, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean Biomass (g)", x = "Depth (m)") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey Year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+mean_biomass_depth
+ggsave(filename = "mean_biomass_depth.eps",plot = mean_biomass_depth, path = "~/github/bzs_lionfish", device = "eps",width = 6,height = 4,dpi = 600)
+```
+
+```{r}
+mean_density_depth <-ggplot(data = mean_preyfish, aes(x = depth, y=total_den, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean Density (#/30m^2)", x = "Depth (m)") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey Year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+mean_density_depth
+ggsave(filename = "mean_density_depth.eps",plot = mean_density_depth, path = "~/github/bzs_lionfish", device = "eps",width = 6,height = 4,dpi = 600)
+```
+```{r}
+trophic_density_depth <-ggplot(data = mean_trophic, aes(x = depth, y=total_den, fill = trophic_guild)) + geom_bar(stat = "summary", fun.y = "mean", position = "fill", color = "black") + labs(y = "Mean % Contribution", x = "Depth (m)") + scale_fill_brewer(palette = "YlGnBu", labels = c("Herbivore", "Invertivore", "Macrocarnivore", "Omnivore", "Planktivore"), name = ("Trophic guild")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+trophic_density_depth
+ggsave(filename = "mean_density_depth.eps",plot = mean_density_depth, path = "~/github/bzs_lionfish", device = "eps",width = 6,height = 4,dpi = 600)
+```
+```{r}
+trophic_density_depth_year <-ggplot(data = mean_trophic, aes(x = depth, y=total_den, fill = trophic_guild)) + geom_bar(stat = "summary", fun.y = "mean", position = "stack", color = "black") + labs(y = "Mean Density", x = "Depth (m)") + scale_fill_brewer(palette = "YlGnBu", labels = c("Herbivore", "Invertivore", "Macrocarnivore", "Omnivore", "Planktivore"), name = ("Trophic guild")) +theme_bw() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14)) + facet_grid(year~.)
+trophic_density_depth_year
+```
+```{r}
+density_depth_year <-ggplot(data = mean_preyfish, aes(x = depth, y=total_den, fill = depth)) + geom_bar(stat = "summary", fun.y = "mean", position = "stack", color = "black") + labs(y = "Mean Density", x = "Depth (m)") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Blues") +theme_bw() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14)) + facet_grid(year~.)
+density_depth_year
+```
+
+```{r}
+mean_biomass_overall <-ggplot(data = mean_preyfish, aes(x = year, y=total_bio, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean Biomass (g)", x = "Year") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired") +theme_classic() + theme(legend.position = "none")+theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+mean_biomass_overall
+ggsave(filename = "mean_biomass_overall.eps",plot = mean_biomass_overall, path = "~/github/bzs_lionfish", device = "eps",width = 6,height = 4,dpi = 600)
+```
+
+```{r}
+mean_density_overall <-ggplot(data = mean_preyfish, aes(x = year, y=total_den, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean Density (#fish/30m^2)", x = "Year") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired") +theme_classic() + theme(legend.position = "none")+theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))
+mean_density_overall
+ggsave(filename = "mean_density_overall.eps",plot = mean_density_overall, path = "~/github/bzs_lionfish", device = "eps",width = 6,height = 4,dpi = 600)
+```
+
+
+
+
+
+```{r}
+biomass_site_depth_year <-ggplot(mean_preyfish, aes(year, total_bio)) + geom_bar(aes(fill = depth, alpha = year), position = "dodge", stat = "summary", fun.y = "mean", color = "black") + labs(y = "Mean biomass (g)", x = "Site") + stat_summary(geom = "errorbar", fun.data = mean_se)+
+  scale_alpha_manual(values = c(0.3, 1)) + scale_fill_brewer(palette = "YlGnBu") +
+  facet_grid(depth~site, scales = "free")  + theme_bw() + theme(axis.text.x = element_text(angle = 45, size = 12, hjust = 1)) + theme(legend.position = "none") + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14, face = "bold"))
+biomass_site_depth_year
+```
+```{r}
+preyfishsubset <- mean_preyfish %>% subset(depth == 60)
+head(preyfishsubset)
+meso_prey_bio <-ggplot(data = preyfishsubset, aes(x = site, y=total_bio, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean biomass (g)", x = "Site") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14)) + theme(axis.text.x = element_text(angle = 20, hjust = 1))
+meso_prey_bio
+```
+```{r}
+meso_prey_den <-ggplot(data = preyfishsubset, aes(x = site, y=total_den, fill = year)) + geom_bar(stat = "summary", fun.y = "mean", position = "dodge", color = "black") + labs(y = "Mean density (#/30 m^2)", x = "Site") + stat_summary(geom = "errorbar", fun.data = mean_se, position = "dodge") + scale_fill_brewer(palette = "Paired", labels = c("2014", "2019"), name = ("Survey year")) +theme_classic() + theme(legend.title = element_text(size = 14), legend.text = element_text(size = 12)) + theme(axis.text = element_text(size = 12), axis.title = element_text(size = 14))+ theme(axis.text.x = element_text(angle = 20, hjust = 1))
+meso_prey_den
+```
+```{r}
+shapiro.test(mean_preyfish$area)
+```
+```{r}
+shapiro.test(sqrt(past_size$area))
+```
+```{r}
+library(WRS2)
+```
+```{r}
+GROUP<- factor(preyfish, c(1,2),labels=c('survey','depth'))
+WC1 <- wilcox.test(biomass~GROUP, data = preyfish)
+WC1
+#doesnt work with both survey and depth; says that grouping factor must have exactly 2 levels; doesnt seem like it is the right thing to use
+```
+
+```{r}
+install.packages("multcompView")
+library(multcompView)
+library(car)
+anova1 <- aov((total_bio) ~ depth + year + year/depth, data = mean_preyfish)
+shapiro.test(sqrt(sqrt(sqrt((mean_preyfish$total_den))))) #not met, p=2.2e-16
+leveneTest(mean_preyfish$total_den) #not met, p=1.103e-10
+summary.aov(anova1)
+TukeyHSD(anova1)
+```
+```{r}
+fit3 <- glm((total_bio)~year + depth + year*depth, data=mean_preyfish)
+summary(fit3)
+```
+
+Results
+1.) Year and depth impact the biomass of prey fish 
+2.) There are sigificantly more fish in 2019 than in 2014
+3.) There are signifcantly more fish at 60m then at any other depth 
+4.) 2014-2019 at 10m and 60m prey fish biomass signifcantly increased
+
+```{r}
+#subset based on trophic guild then compare it to survey
+#Subset to 60m then biomass by trophic guild then depth 
+trophicsubset <- preyfish %>% subset(depth == 60)
+anova2 <- aov(sqrt(density) ~ trophic_guild, data = trophicsubset)
+shapiro.test(anova2$residuals) #not met, p=2.2e-16
+leveneTest(anova2) #not met, p=2.2e-16
+summary.aov(anova2)
+TukeyHSD(anova2)
+```
+Results
+1.) Plantivorous fish density is significantly greater than all other trophic guilds at 60m
+2.) Reference gretchens model on plankton abundance and upwelling 
+
+```{r}
+trophicPsubset <- preyfish %>% subset(trophic_guild == "Planktivore")
+anova3 <- aov(sqrt(density) ~ survey* depth, data = trophicPsubset)
+shapiro.test(anova3$residuals) #not met, p=0.01774
+leveneTest(anova3) #not met, p=2.353e-05
+summary.aov(anova3)
+TukeyHSD(anova3)
+```
+
+Results
+1.) Depth and survey year impacted planktivorous density 
+2.) Plantivorous fish significantly increased at 60m across survey year
+3.) Interesting- are lionfish filling a predator role niche that is absent on the reefs? Fish community is not drastically changing with lionfish density staying fairly the same 
+
+```{r}
+trophicIsubset <- preyfish %>% subset(trophic_guild == "Invertivore")
+anova4 <- aov(sqrt(density) ~ survey* depth, data = trophicIsubset)
+shapiro.test(anova4$residuals) #not met, p=2.2e-16
+leveneTest(anova4) #met, p=0.1306
+summary.aov(anova4)
+```
+Results
+1.) Depth and survey year did not impact invertivore density 
+
+```{r}
+trophicOsubset <- preyfish %>% subset(trophic_guild == "Omnivore")
+anova5 <- aov(sqrt(density) ~ survey* depth, data = trophicOsubset)
+shapiro.test(anova5$residuals) #not met, p=2.2e-16
+leveneTest(anova5) #not met, p=1.084e-06
+summary.aov(anova5)
+TukeyHSD(anova5)
+```
+Results
+1.) Depth and survey year impacted omnivorous density 
+3.) Omnivorous fish significantly decreased at 10m across survey year
+4.) How much is overfishing in the shallow areas affecting fish biomass- complete loss of omnivorous fish species- the ones that we are catching?
+
+```{r}
+trophicMsubset <- preyfish %>% subset(trophic_guild == "Macrocarnivore")
+anova6 <- aov(sqrt(density) ~ survey * depth, data = trophicMsubset)
+shapiro.test(anova6$residuals) #not met, p=7.37e-05
+leveneTest(anova6) #met, p=0.2015
+summary.aov(anova6)
+```
+Results
+1.) Depth and survey year did not impact macrocarnivore density 
+
+```{r}
+anova7 <- aov(sqrt(density) ~ survey * depth, data = preyfish)
+shapiro.test(anova7$residuals) #not met, p=2.2e-16
+leveneTest(anova7) #Not met, p=3.2e-15
+summary.aov(anova7)
+TukeyHSD(anova7)
+```
+Results
+1.) Depth and year impact the trophic guild composition and the density of prey fish
+2.) Plantivorous fish density is significantly greater than all other trophic guilds
+
+```{r}
+trophicPsubset <- preyfish %>% subset(trophic_guild == "Planktivore")
+anova8 <- aov(log(biomass) ~ survey* depth, data = trophicPsubset)
+shapiro.test(anova8$residuals) #met, p=0.2949
+leveneTest(anova8) #met, p=0.2152
+summary.aov(anova8) #depth and survey were sigificant independently
+TukeyHSD(anova8)
+```
+
+Results
+1.) Depth and survey year impacted planktivorous biomass 
+
+```{r}
+trophicIsubset <- preyfish %>% subset(trophic_guild == "Invertivore")
+anova9 <- aov(log(biomass) ~ survey* depth, data = trophicIsubset)
+shapiro.test(anova9$residuals) #not met, p=2.0009e-5
+leveneTest(anova9) #not met, p=0.0005574
+summary.aov(anova9)
+```
+Results
+1.) Depth and survey year did not impact invertivore biomass
+
+```{r}
+trophicOsubset <- preyfish %>% subset(trophic_guild == "Omnivore")
+anova10 <- aov(log(biomass) ~ survey* depth, data = trophicOsubset)
+shapiro.test(anova10$residuals) #not met, p=1.232e-5
+leveneTest(anova10) #met, p=0.7257
+summary.aov(anova10)
+TukeyHSD(anova10)
+```
+Results
+1.) Depth impacted omnivorous biomass
+
+
+```{r}
+trophicMsubset <- preyfish %>% subset(trophic_guild == "Macrocarnivore")
+anova11 <- aov(log(biomass) ~ survey * depth, data = trophicMsubset)
+shapiro.test(anova11$residuals) #met, p=0.1201
+leveneTest(anova11) #met, p=0.4255
+summary.aov(anova11)
+```
+
+Results
+1.) Depth and survey year did not impact macrocarnivore biomass
+
+```{r}
+sixtysubset <- preyfish %>% subset(depth > 59)
+anova12 <- aov(log(biomass) ~ site *survey, data = sixtysubset)
+shapiro.test(anova12$residuals) #not met, p=0.0001515
+leveneTest(anova12) #not met, p=1.973e-5
+summary.aov(anova12)
+```
+```{r}
+sixtysubset <- preyfish %>% subset(depth > 59)
+anova13 <- aov(log(density) ~ site *survey, data = sixtysubset)
+shapiro.test(anova13$residuals) #not met, p=3.692e-10
+leveneTest(anova13) #not met, p=0.00013
+summary.aov(anova13) 
+TukeyHSD(anova13)
+```
+
+
