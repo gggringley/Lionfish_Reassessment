@@ -89,11 +89,88 @@ heatmap_bio_red <- ggplot(data = matrix, aes(x = depth, y = species)) + geom_til
   theme_bw() +
   theme(axis.text.y = element_text(face = "italic")) +
   labs(fill = "Mean % Biomass") +
-  facet_grid(year~.)
+  facet_grid(.~year)
 ggsave(filename = "heatmap_bio_red.eps", plot = heatmap_bio_red, device = "eps", path = "~/github/Lionfish_reassessment")
 heatmap_bio_red
 ```
-
+```{r}
+heatmap_den_blue <- ggplot(data = matrix, aes(x = depth, y = species)) + geom_tile(aes(y = reorder(species, perc_den, mean, order = TRUE), fill = perc_den*100), color = "red4", width = 0.85) +
+  scale_fill_gradientn(colours = RColorBrewer::brewer.pal(9, "Blues")) +
+  ylab("Species") +
+  xlab("Depth") +  
+  theme_bw() +
+  theme(axis.text.y = element_text(face = "italic")) +
+  labs(fill = "Mean % Density") +
+  facet_grid(.~year)
+ggsave(filename = "heatmap_den_blue.eps", plot = heatmap_den_blue, device = "eps", path = "~/github/Lionfish_reassessment")
+heatmap_den_blue
+```
 #next try to rearrange data by family rather than species - will need to start from input data...
 I do like the facet with this 
 
+```{r}
+library(dbplyr)
+matrix_preyfish_family <- bzs_preyfish_final %>% group_by(year, site, depth, transect, family) %>% summarise(total_den = sum(density), total_bio = sum(biomass)) 
+matrix_family <- matrix_preyfish_family %>% mutate(perc_bio = total_bio/sum(total_bio), perc_den = total_den/sum(total_den))
+head(matrix_family)
+#matrix data should be used for heatmap if looking at families
+```
+```{r}
+heatmap_bio_family <- ggplot(data = matrix_family, aes(x = depth, y = family)) + geom_tile(aes(y = reorder(family, perc_bio, mean, order = TRUE), fill = perc_bio*100), color = "red4", width = 0.85) +
+  scale_fill_gradientn(colours = RColorBrewer::brewer.pal(9, "Reds")) +
+  ylab("Family") +
+  xlab("Depth") +  
+  theme_bw() +
+  theme(axis.text.y = element_text(face = "italic")) +
+  labs(fill = "Mean % Biomass") +
+  facet_grid(.~year)
+ggsave(filename = "heatmap_bio_family.eps", plot = heatmap_bio_family, device = "eps", path = "~/github/Lionfish_reassessment", width = 6,height = 4,dpi = 600)
+heatmap_bio_family
+```
+
+```{r}
+heatmap_den_family <- ggplot(data = matrix_family, aes(x = depth, y = family)) + geom_tile(aes(y = reorder(family, perc_den, mean, order = TRUE), fill = perc_den*100), color = "navy", width = 0.85) +
+  scale_fill_gradientn(colours = RColorBrewer::brewer.pal(9, "Blues")) +
+  ylab("Family") +
+  xlab("Depth") +  
+  theme_bw() +
+  theme(axis.text.y = element_text(face = "italic")) +
+  labs(fill = "Mean % Density") +
+  facet_grid(.~year)
+ggsave(filename = "heatmap_den_family.eps", plot = heatmap_den_family, device = "eps", path = "~/github/Lionfish_reassessment", width = 6,height = 4,dpi = 600)
+heatmap_den_family
+```
+
+Now lets do it with trophic guilds!
+
+```{r}
+library(dbplyr)
+matrix_preyfish_trophic <- bzs_preyfish_final %>% group_by(year, site, depth, transect, trophic_guild) %>% summarise(total_den = sum(density), total_bio = sum(biomass)) 
+matrix_trophic <- matrix_preyfish_trophic %>% mutate(perc_bio = total_bio/sum(total_bio), perc_den = total_den/sum(total_den))
+head(matrix_trophic)
+#matrix data should be used for heatmap if looking at trophic guilds
+```
+```{r}
+heatmap_bio_trophic <- ggplot(data = matrix_trophic, aes(x = depth, y = trophic_guild)) + geom_tile(aes(y = reorder(trophic_guild, perc_bio, mean, order = TRUE), fill = perc_bio*100), color = "red4", width = 0.85) +
+  scale_fill_gradientn(colours = RColorBrewer::brewer.pal(9, "Reds")) +
+  ylab("Trophic Guild") +
+  xlab("Depth") +  
+  theme_bw() +
+  theme(axis.text.y = element_text(face = "italic")) +
+  labs(fill = "Mean % Biomass") +
+  facet_grid(.~year)
+ggsave(filename = "heatmap_bio_trophic.eps", plot = heatmap_bio_trophic, device = "eps", path = "~/github/Lionfish_reassessment", width = 6,height = 4,dpi = 600)
+heatmap_bio_trophic
+```
+```{r}
+heatmap_den_trophic <- ggplot(data = matrix_trophic, aes(x = depth, y = trophic_guild)) + geom_tile(aes(y = reorder(trophic_guild, perc_den, mean, order = TRUE), fill = perc_den*100), color = "navy", width = 0.85) +
+  scale_fill_gradientn(colours = RColorBrewer::brewer.pal(9, "Blues")) +
+  ylab("Trophic Guild") +
+  xlab("Depth") +  
+  theme_bw() +
+  theme(axis.text.y = element_text(face = "italic")) +
+  labs(fill = "Mean % Density") +
+  facet_grid(.~year)
+ggsave(filename = "heatmap_den_trophic.eps", plot = heatmap_den_trophic, device = "eps", path = "~/github/Lionfish_reassessment", width = 6,height = 4,dpi = 600)
+heatmap_den_trophic
+```
