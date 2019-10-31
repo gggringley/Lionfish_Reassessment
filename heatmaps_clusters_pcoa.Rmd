@@ -1,0 +1,99 @@
+---
+title: "Heat map_preyfish"
+author: "GG"
+date: "October 31, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(dbplyr)
+```
+```{r}
+bzs_preyfish <- read_csv("~/github/bzs_lionfish/preyfish_2019_raw.csv")
+head(bzs_preyfish)
+bzs_preyfish_clean <- filter(bzs_preyfish, size<20, density>0, depth!=45)
+head(bzs_preyfish_clean)
+```
+
+
+```{r}
+
+library(dplyr)
+bzs_preyfish_final <- bzs_preyfish_clean %>%
+  mutate(year=as.factor(year)) %>% mutate(depth=as.factor(depth))
+head(bzs_preyfish_final)
+```
+
+```{r}
+library(dbplyr)
+matrix_preyfish <- bzs_preyfish_final %>% group_by(year, site, depth, transect, species) %>% summarise(total_den = sum(density), total_bio = sum(biomass)) 
+matrix <- matrix_preyfish %>% mutate(perc_bio = total_bio/sum(total_bio), perc_den = total_den/sum(total_den))
+head(matrix)
+#matrix data should be used for heatmap if looking at individual species
+```
+
+```{r}
+
+library(tidyr)
+# The arguments to spread():
+# - data: Data object
+# - key: Name of column containing the new column names
+# - value: Name of column containing values
+matrix[4] = NULL
+matrix[5] = NULL
+matrix[5] = NULL
+matrix_bio <- matrix %>% group_by(year, depth, species) %>% summarise(avg_perc_bio = mean(perc_bio))
+head(matrix_bio)
+matrix_wide_bio <- spread(matrix_bio, species, avg_perc_bio)
+matrix_wide_bio
+#matrix wide data should be used for cluster analyses and PCOA - perhaps average by depth across years? 
+```
+
+
+```{r}
+library(dplyr)
+matrix_wide_bio_id <- matrix_wide_bio %>% unite(id, year, depth, sep = "_", remove = TRUE)
+matrix_bio_final <- column_to_rownames(matrix_wide_bio_id, var="id")
+matrix_bio_final
+```
+
+```{r}
+
+library(tidyverse)  # data manipulation
+library(cluster)    # clustering algorithms
+library(factoextra)
+```
+
+
+```{r}
+library(ggplot2)
+matrix_bio_final[is.na(matrix_bio_final)] <-0
+cluster_bio <- kmeans(matrix_bio_final[,-1], centers = 4, nstart = 25)
+str(cluster_bio)
+pcaplot <- fviz_cluster(cluster_bio, data = matrix_bio_final, fill = "darkblue") + ylim(-2.5,4.5) + xlim(-5, 10) + theme_classic()
+pcaplot
+```
+
+```{r}
+heatmap_bio_red <- ggplot(data = matrix, aes(x = depth, y = species)) + geom_tile(aes(y = reorder(species, perc_bio, mean, order = TRUE), fill = perc_bio*100), color = "red4", width = 0.85) +
+  scale_fill_gradientn(colours = RColorBrewer::brewer.pal(9, "Reds")) +
+  ylab("Species") +
+  xlab("Depth") +  
+  theme_bw() +
+  theme(axis.text.y = element_text(face = "italic")) +
+  labs(fill = "Mean % Biomass") +
+  facet_grid(year~.)
+ggsave(filename = "heatmap_bio_red.eps", plot = heatmap_bio_red, device = "eps", path = "~/github/Lionfish_reassessment")
+heatmap_bio_red
+```
+
+#next try to rearrange data by family rather than species - will need to start from input data...
+I do like the facet with this 
+
